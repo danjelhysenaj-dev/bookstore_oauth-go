@@ -80,6 +80,9 @@ func AuthenticateRequest(request *http.Request) *errors.RestErr {
 	}
 	at, err := getAccessToken(accessTokenId)
 	if err != nil {
+		if err.Status == http.StatusNotFound {
+			return nil
+		}
 		return err
 	}
 	request.Header.Add(headerXClientId, fmt.Sprintf("%v", at.ClientId))
@@ -108,6 +111,9 @@ func getAccessToken(accessTokenId string) (*accessToken, *errors.RestErr) {
 		var restErr errors.RestErr
 		if err := json.Unmarshal(response.Bytes(), &restErr); err != nil {
 			return nil, errors.NewInternalServerError("invalid error interface when trying to get access token")
+		}
+		if response.StatusCode == 404 {
+			return nil, nil
 		}
 		return nil, &restErr
 	}
